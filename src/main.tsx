@@ -4,6 +4,9 @@ import { TodoPage } from "./components/TodoPage.js";
 import type { Todo } from "./types.js";
 import { createTodo, listTodos } from "./lib/db.js";
 import { AboutPage } from "./components/About.js";
+import { TodoItemSchema } from "./lib/validation.js";
+import z from "zod";
+import { ErrorPage } from "./components/ErrorPage.js";
 
 // búum til og exportum Hono app
 export const app = new Hono();
@@ -12,11 +15,11 @@ export const app = new Hono();
 app.use("/*", serveStatic({ root: "./static" }));
 
 app.get("/", async (c) => {
-  const todos = await listTodos()
+  const todos = await listTodos();
 
   if (!todos) {
-    console.error('villa við að sækja todos', todos)
-    return c.text('villa!')
+    console.error("villa við að sækja todos", todos);
+    return c.text("villa!");
   }
 
   return c.html(<TodoPage todos={todos} />);
@@ -26,14 +29,32 @@ app.get("/about", async (c) => {
   return c.html(<AboutPage />);
 });
 
-app.post('/add', async (c) => {
+app.post("/add", async (c) => {
   const body = await c.req.parseBody();
-  console.log(body)
 
-  const title = body.title
-  // hér þarf að eiga sér stað validation!
+  const result = TodoItemSchema.safeParse(body);
 
-  // createTodo(title);
+  if (!result.success) {
+    // Villa!
+    console.error(z.flattenError(result.error));
+    return c.html(
+      <ErrorPage>
+        <p>Titill ekki rétt formaður!</p>
+      </ErrorPage>,
+      400,
+    );
+  }
 
-  return c.text('post móttekið!')
+  const dbResult = await createTodo(result.data);
+
+  if (!dbResult) {
+    return c.html(
+      <ErrorPage>
+        <p>Gat ekki vistað í gagnagrunni.</p>
+      </ErrorPage>,
+      500,
+    );
+  }
+
+  return c.redirect('/');
 });

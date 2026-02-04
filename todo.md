@@ -4,9 +4,10 @@
 - [x] basic css
 - [x] Layout component sem inniheldur <html> oþh
 
-- [ ] skoða zod
-- [ ] bæta við validation á title áður en todo item búið til
-- [ ] búa til todo
+- [x] form til að búa til todo
+- [x] skoða zod
+- [x] bæta við validation á title áður en todo item búið til
+- [x] búa til todo
 
 - [ ] breyta / klára todo
 

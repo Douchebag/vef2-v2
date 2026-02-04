@@ -1,5 +1,6 @@
-import pg from 'pg';
-import type { Todo } from '../types.js';
+import pg from "pg";
+import type { Todo } from "../types.js";
+import type { TodoItem } from "./validation.js";
 
 /**
  * Gets a PostgreSQL connection pool.
@@ -9,7 +10,7 @@ function getPool(): pg.Pool {
   const { DATABASE_URL } = process.env;
 
   if (!DATABASE_URL) {
-    console.error('DATABASE_URL not set');
+    console.error("DATABASE_URL not set");
     process.exit(1);
   }
 
@@ -17,8 +18,8 @@ function getPool(): pg.Pool {
     connectionString: DATABASE_URL,
   });
 
-  pool.on('error', (err: Error) => {
-    console.error('Unexpected error on idle client', err);
+  pool.on("error", (err: Error) => {
+    console.error("Unexpected error on idle client", err);
     process.exit(-1);
   });
 
@@ -41,7 +42,7 @@ async function query<T extends pg.QueryResultRow>(
   try {
     return await client.query<T>(q, values);
   } catch (err) {
-    console.error('Database query error', err);
+    console.error("Database query error", err);
     return null;
   } finally {
     client.release();
@@ -63,7 +64,7 @@ export async function init(): Promise<boolean> {
       created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
   */
- return false
+  return false;
 }
 
 /**
@@ -78,16 +79,18 @@ export async function listTodos(): Promise<Todo[] | null> {
   //  { title: 'verkefni2'},
   //  { title: 'verkefni3'}
   //]
-//
+  //
   //return todos;
 
-  const results = await query('SELECT id, title, finished FROM todos ORDER BY finished ASC, created DESC');
+  const results = await query(
+    "SELECT id, title, finished FROM todos ORDER BY finished ASC, created DESC",
+  );
 
   if (results) {
     return results.rows as Todo[];
   }
 
-  return null
+  return null;
 }
 
 /**
@@ -95,9 +98,20 @@ export async function listTodos(): Promise<Todo[] | null> {
  * @param title Title of the todo item to create.
  * @returns Created todo item or null on error.
  */
-export async function createTodo(title: string): Promise<Todo | null> {
+export async function createTodo(todoItem: TodoItem): Promise<Todo | null> {
   // INSERT INTO todos (title) VALUES ($1) RETURNING id, title, finished
-    return null
+  const q =
+    "INSERT INTO todos (title) VALUES ($1) RETURNING id, title, finished";
+
+  const result = await query<Todo>(q, [todoItem.title]);
+
+  const row = result?.rows[0];
+
+  if (!row) {
+    console.error("query success but no returned rows");
+    return null;
+  }
+  return row;
 }
 
 /**
@@ -113,7 +127,7 @@ export async function updateTodo(
   finished: boolean,
 ): Promise<Todo | null> {
   // UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished
-    return null
+  return null;
 }
 
 /**
@@ -123,7 +137,7 @@ export async function updateTodo(
  */
 export async function deleteTodo(id: number): Promise<boolean | null> {
   // DELETE FROM todos WHERE id = $1
-    return null
+  return null;
 }
 
 /**
@@ -132,5 +146,5 @@ export async function deleteTodo(id: number): Promise<boolean | null> {
  */
 export async function deleteFinishedTodos(): Promise<number | null> {
   // DELETE FROM todos WHERE finished = true
-    return null
+  return null;
 }

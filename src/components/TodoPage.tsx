@@ -14,14 +14,9 @@ export const TodoPage: FC<TodoPageProps> = ({ todos = [] }) => {
 
   return (
     <Layout title="TodoListinn">
-      <section>
-        <p>Halló hono heimur!</p>
+      <section class="todo-list">
         <form method="post" action="/add">
           <input type="text" name="title" />
-          <input type="file" name="file" />
-          <input type="checkbox" name="checkbox" />
-          <select name="select"><option>foo</option></select>
-          <textarea name="text"></textarea>
           <button>bæta við</button>
         </form>
 

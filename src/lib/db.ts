@@ -64,6 +64,14 @@ export async function init(): Promise<boolean> {
       created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     )
   */
+  await getPool().query(`
+    CREATE TABLE IF NOT EXISTS todos (
+      id serial PRIMARY KEY,
+      title varchar(255) NOT NULL,
+      finished boolean NOT NULL DEFAULT false,
+      created timestamp NOT NULL DEFAULT now()
+    );
+  `);
   return false;
 }
 
@@ -127,7 +135,19 @@ export async function updateTodo(
   finished: boolean,
 ): Promise<Todo | null> {
   // UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished
-  return null;
+
+  const q = "UPDATE todos SET title = $1, finished = $2 WHERE id = $3 RETURNING id, title, finished";
+
+  const result = await query<Todo>(q, [title, finished, id]);
+
+  const row = result?.rows[0];
+
+  if (!row) {
+    console.error("query success but no returned rows");
+    return null;
+  }
+  return row;
+
 }
 
 /**
@@ -137,7 +157,16 @@ export async function updateTodo(
  */
 export async function deleteTodo(id: number): Promise<boolean | null> {
   // DELETE FROM todos WHERE id = $1
-  return null;
+
+  const q = "DELETE FROM todos WHERE id = $1";
+
+  const result = await query(q, [id]);
+
+  if (!result) {
+    return null;
+  }
+
+  return (result.rowCount ?? 0) > 0;
 }
 
 /**
@@ -146,5 +175,14 @@ export async function deleteTodo(id: number): Promise<boolean | null> {
  */
 export async function deleteFinishedTodos(): Promise<number | null> {
   // DELETE FROM todos WHERE finished = true
-  return null;
+  const q = "DELETE FROM todos WHERE finished = true";
+  
+  const result = await query(q);
+
+  if (!result) {
+    return null;
+  }
+
+  return result.rowCount;
+  
 }

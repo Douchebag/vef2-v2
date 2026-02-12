@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { TodoPage } from "./components/TodoPage.js";
-import type { Todo } from "./types.js";
-import { createTodo, listTodos } from "./lib/db.js";
+import { createTodo, listTodos, updateTodo, deleteTodo, deleteFinishedTodos } from "./lib/db.js";
 import { AboutPage } from "./components/About.js";
 import { TodoItemSchema } from "./lib/validation.js";
 import z from "zod";
@@ -29,19 +28,22 @@ app.get("/about", async (c) => {
   return c.html(<AboutPage />);
 });
 
-app.post("/add", async (c) => {
+app.post('/add', async (c) => {
   const body = await c.req.parseBody();
 
   const result = TodoItemSchema.safeParse(body);
 
   if (!result.success) {
-    // Villa!
     console.error(z.flattenError(result.error));
+
+    const todos = await listTodos();
+
     return c.html(
-      <ErrorPage>
-        <p>Titill ekki rétt formaður!</p>
-      </ErrorPage>,
-      400,
+      <TodoPage
+        todos={todos ?? []}
+        error="Titill ekki rétt formaður!"
+      />,
+      400
     );
   }
 
@@ -52,9 +54,91 @@ app.post("/add", async (c) => {
       <ErrorPage>
         <p>Gat ekki vistað í gagnagrunni.</p>
       </ErrorPage>,
+      500
+    );
+  }
+
+  return c.redirect('/', 303);
+});
+
+app.post("/update/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) {
+    return c.html(
+      <ErrorPage>
+        <p>Ógilt id.</p>
+      </ErrorPage>,
+      400,
+    );
+  }
+
+  const body = await c.req.parseBody();
+
+  const finished =
+    body.finished === "on";
+
+  const result = TodoItemSchema.safeParse({
+    title: body.title,
+    finished,
+  });
+
+  if (!result.success) {
+    return c.html(
+      <ErrorPage>
+        <p>Titill ekki rétt formaður!</p>
+      </ErrorPage>,
+      400,
+    );
+  }
+
+  const updated = await updateTodo(id, result.data.title, finished);
+  if (!updated) {
+    return c.html(
+      <ErrorPage>
+        <p>Gat ekki uppfært todo</p>
+      </ErrorPage>,
       500,
     );
   }
 
-  return c.redirect('/');
+  return c.redirect("/", 303);
 });
+
+app.post("/delete/finished", async (c) => {
+  const n = await deleteFinishedTodos();
+  if (n === null) {
+    return c.html(
+      <ErrorPage>
+        <p>Gat ekki eytt kláruðum todo</p>
+      </ErrorPage>,
+      500,
+    );
+  }
+
+  return c.redirect("/", 303);
+});
+
+app.post("/delete/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) {
+    return c.html(
+      <ErrorPage>
+        <p>Ógilt id.</p>
+      </ErrorPage>,
+      400,
+    );
+  }
+
+  const ok = await deleteTodo(id);
+  if (ok === null) {
+    return c.html(
+      <ErrorPage>
+        <p>Gat ekki eytt todo</p>
+      </ErrorPage>,
+      500,
+    );
+  }
+
+  return c.redirect("/", 303);
+});
+

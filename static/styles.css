@@ -151,3 +151,8 @@ main {
   justify-content: space-between;
   gap: calc(var(--spacing) / 2);
 }
+
+.error {
+  color: #ff0000;
+  font-weight: 600;
+}

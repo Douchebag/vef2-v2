@@ -9,7 +9,7 @@ export function Layout({ title, children }: PropsWithChildren<Props>) {
     <html>
       <head>
         <title>{title}</title>
-        <link rel="stylesheet" href="./styles.css" />
+        <link rel="stylesheet" href="/styles.css" />
       </head>
       <body>
         <main>

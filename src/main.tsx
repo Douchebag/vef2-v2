@@ -6,6 +6,9 @@ import { AboutPage } from "./components/About.js";
 import { TodoItemSchema } from "./lib/validation.js";
 import z from "zod";
 import { ErrorPage } from "./components/ErrorPage.js";
+import { init } from './lib/db.js';
+
+await init();
 
 // búum til og exportum Hono app
 export const app = new Hono();
